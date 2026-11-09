@@ -1,34 +1,38 @@
-import sys
-from core.audio import record_and_transcribe
-from core.engine import query_arisa
+import subprocess
+import os
+from ollama import chat
 
-def run_arisa_loop():
-    print("==================================================")
-    print(" A.R.I.S.A. Core System :: Voice Interface Online ")
-    print("==================================================")
+ARISA_SYSTEM_PROMPT = (
+    "You are A.R.I.S.A. (Autonomous Real-time Intelligence & System Agent), "
+    "an advanced local-first AI system engineered by Angell Data Intelligence. "
+    "Your tone is formal, minimalist, crisp, and unbothered. "
+    "You address the user strictly as 'Ma'am'. Keep responses concise and direct."
+)
+
+def speak(text):
+    """Uses macOS native text-to-speech to voice A.R.I.S.A.'s responses."""
+    clean_text = text.replace('"', '').replace('*', '')
+    subprocess.run(["say", clean_text])
+
+def query_arisa(prompt: str, voice_output: bool = True):
+    print("Querying A.R.I.S.A. local engine...")
+    response = chat(
+        model='llama3:8b',
+        messages=[
+            {'role': 'system', 'content': ARISA_SYSTEM_PROMPT},
+            {'role': 'user', 'content': prompt},
+        ]
+    )
+    answer = response['message']['content']
     
-    while True:
-        try:
-            # 1. Listen to operator microphone input
-            user_speech = record_and_transcribe(duration=5)
-            
-            if not user_speech:
-                print("[System]: No audio detected. Retrying...")
-                continue
-                
-            # Exit condition
-            if "exit" in user_speech.lower() or "terminate" in user_speech.lower():
-                print("[A.R.I.S.A.]: Standing down, Ma'am.")
-                break
-            
-            # 2. Query the local Llama 3 engine
-            response = query_arisa(user_speech)
-            print(f"\n[A.R.I.S.A.]: {response}\n")
-            print("-" * 50)
-            
-        except KeyboardInterrupt:
-            print("\n[System]: Interrupted by operator. Shutting down...")
-            sys.exit(0)
+    if voice_output:
+        speak(answer)
+        
+    return answer
 
 if __name__ == "__main__":
-    run_arisa_loop()
+    print("Initializing A.R.I.S.A. Core Engine...")
+    test_prompt = "Status check, Arisa. Are systems operational?"
+    print(f"\nUser: {test_prompt}")
+    reply = query_arisa(test_prompt)
+    print(f"\nA.R.I.S.A.: {reply}")
