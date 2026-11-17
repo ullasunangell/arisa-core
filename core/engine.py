@@ -1,31 +1,31 @@
-import sys
+import subprocess
 import ollama
 
-ARISA_SYSTEM_PROMPT = (
-    "You are A.R.I.S.A. (Autonomous Real-time Intelligence & System Agent), "
-    "a professional, sharp, and highly secure AI intelligence engineered by Miss Angell. "
-    "Your operator is addressed strictly as 'Ma'am'. Your tone is crisp, minimalist, unbothered, "
-    "and intensely competent. Provide concise, high-signal technical responses without fluff."
-)
+class ArisaEngine:
+    def __init__(self, model: str = "llama3:8b", voice: str = "Serena"):
+        self.model = model
+        self.voice = voice  # macOS British RP voice (or default)
 
-def query_arisa(prompt: str, model: str = "llama3:8b") -> str:
-    """Sends a prompt to the local Ollama instance wrapped in A.R.I.S.A.'s persona."""
-    try:
-        response = ollama.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": ARISA_SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-        )
-        return response['message']['content']
-    except Exception as e:
-        return f"[System Error]: Failed to reach local Ollama backend -> {e}"
+    def speak(self, text: str):
+        """Uses macOS native 'say' command for British RP TTS."""
+        try:
+            # Clean text slightly for shell safety if needed
+            subprocess.run(["say", "-v", self.voice, text], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"[TTS Error]: {e}")
 
-if __name__ == "__main__":
-    print("Initializing A.R.I.S.A. Core Engine...")
-    test_prompt = "Status check, Arisa. Are systems operational?"
-    print(f"\nUser: {test_prompt}")
-    
-    reply = query_arisa(test_prompt)
-    print(f"\nA.R.I.S.A.: {reply}")
+    def query(self, prompt: str) -> str:
+        """Queries the local Ollama instance."""
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {"role": "system", "content": "You are Arisa, an advanced local-first autonomous AI system assistant created for software engineering and personal data management. Be concise, precise, professional, and address the user respectfully as 'ma'am'."},
+                {"role": "user", "content": prompt}
+            ])
+            return response['message']['content']
+        except Exception as e:
+            return f"Error communicating with local LLM engine: {e}"
+
+def query_arisa(prompt: str) -> str:
+    """Convenience wrapper function for querying."""
+    engine = ArisaEngine()
+    return engine.query(prompt)
