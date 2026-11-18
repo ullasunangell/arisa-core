@@ -7,3 +7,4 @@ venv/
 .DS_Store
 *.sqlite3
 *.db
+.history.history/
