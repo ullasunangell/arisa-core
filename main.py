@@ -1,41 +1,46 @@
-import sys
 import time
-from core.audio import record_and_transcribe
-from core.engine import query_arisa, ArisaEngine
+from core.audio import record_until_pause
+from core.engine import ArisaEngine, query_arisa
+
 
 def run_arisa_loop():
     engine = ArisaEngine()
-    
-    # Initial greeting via British RP TTS
+
     greeting = "Arisa online. Systems initialized. Listening, ma'am."
     print(f"\n[A.R.I.S.A.]: {greeting}")
     engine.speak(greeting)
 
+    exit_triggers = [
+        "exit",
+        "quit",
+        "bye",
+        "goodbye",
+        "stop",
+        "cancel",
+        "shut down",
+        "stop listening",
+    ]
+
     while True:
         try:
-            # 1. Listen and transcribe from microphone (5-second window per trigger)
-            user_input = record_and_transcribe(duration=5)
-            
+            user_input = record_until_pause(pause_threshold=4.0)
+
             if not user_input.strip():
                 continue
 
-            # Check for exit/shutdown triggers naturally
-            if any(exit_word in user_input.lower() for exit_word in ["exit", "quit", "bye", "goodbye", "stop", "cancel", "shut down", "stop listening"]):
-                farewell = "Shutting down systems. Goodbye, ma'am."
+            cleaned_input = user_input.lower().strip()
+            print(f"\n[Operator]: {user_input}")
+
+            if any(trigger in cleaned_input for trigger in exit_triggers):
+                farewell = "Signing off. Goodbye, ma'am."
                 print(f"\n[A.R.I.S.A.]: {farewell}")
                 engine.speak(farewell)
                 break
 
-            print(f"\n[Operator]: {user_input}")
-
-            # 2. Query local Ollama engine (using Llama 3)
             response_text = query_arisa(user_input)
             print(f"[A.R.I.S.A.]: {response_text}")
 
-            # 3. Vocalize response via macOS native TTS (Serena RP)
             engine.speak(response_text)
-            
-            # Brief pause before next listening window
             time.sleep(1)
 
         except KeyboardInterrupt:
@@ -44,6 +49,7 @@ def run_arisa_loop():
         except Exception as e:
             print(f"\n[System Error]: {e}")
             break
+
 
 if __name__ == "__main__":
     run_arisa_loop()
